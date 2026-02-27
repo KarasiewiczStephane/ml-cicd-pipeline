@@ -1,0 +1,53 @@
+name: Model Training
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_retrain:
+        description: "Force retraining even if cache is valid"
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: "0 0 * * 0"
+  push:
+    paths:
+      - "data/**"
+      - "src/models/**"
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate data
+        run: python -m src.data.validator
+
+      - name: Train model
+        run: python -m src.models.train
+
+      - name: Evaluate model
+        run: python -m src.models.evaluate
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: models/model.joblib
+
+      - name: Upload metrics report
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-report
+          path: metrics/
