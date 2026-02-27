@@ -40,6 +40,9 @@ jobs:
       - name: Evaluate model
         run: python -m src.models.evaluate
 
+      - name: Performance gate
+        run: python -m src.models.registry
+
       - name: Upload model artifact
         uses: actions/upload-artifact@v4
         with:
