@@ -39,3 +39,33 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.sha }}
             ghcr.io/${{ github.repository }}:latest
+
+  staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install test dependencies
+        run: pip install pytest requests
+
+      - name: Deploy to staging (simulated)
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+          docker run -d --name staging -p 8000:8000 ghcr.io/${{ github.repository }}:${{ github.sha }}
+          sleep 10
+
+      - name: Run integration tests
+        run: pytest tests/integration/ -v
+
+      - name: Cleanup staging
+        if: always()
+        run: docker rm -f staging || true
