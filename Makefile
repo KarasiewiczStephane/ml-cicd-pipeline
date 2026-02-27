@@ -1,4 +1,4 @@
-.PHONY: install test lint clean run docker
+.PHONY: install test lint coverage clean run docker
 
 install:
 	pip install -r requirements.txt
@@ -9,6 +9,9 @@ test:
 lint:
 	ruff check src/ tests/
 	ruff format src/ tests/
+
+coverage:
+	pytest tests/ -v --cov=src --cov-report=xml --cov-report=html --cov-fail-under=80
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
