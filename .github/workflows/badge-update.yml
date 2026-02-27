@@ -1,0 +1,44 @@
+name: Update Badges
+
+on:
+  workflow_run:
+    workflows: ["CI", "Model Training"]
+    types: [completed]
+
+jobs:
+  update-badges:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download metrics artifact
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
+        with:
+          workflow: train.yml
+          name: metrics-report
+          path: metrics/
+
+      - name: Generate badges
+        run: python -m src.utils.badge_generator
+
+      - name: Commit badge updates
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add README.md
+          git diff --staged --quiet || git commit -m "chore: update badges [skip ci]"
+          git push
