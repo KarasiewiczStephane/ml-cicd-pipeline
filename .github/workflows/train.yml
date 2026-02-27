@@ -18,6 +18,8 @@ on:
 jobs:
   train:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +45,9 @@ jobs:
       - name: Performance gate
         run: python -m src.models.registry
 
+      - name: Generate release notes
+        run: python -m src.utils.release_notes
+
       - name: Upload model artifact
         uses: actions/upload-artifact@v4
         with:
@@ -54,3 +59,16 @@ jobs:
         with:
           name: metrics-report
           path: metrics/
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: model-v${{ github.run_number }}
+          name: Model Release v${{ github.run_number }}
+          body_path: metrics/release_notes.md
+          files: |
+            models/model.joblib
+            metrics/latest_metrics.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
