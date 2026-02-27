@@ -70,6 +70,10 @@ jobs:
         if: steps.cache-check.outputs.skip != 'true'
         run: python -m src.models.registry
 
+      - name: Update metrics history
+        if: steps.cache-check.outputs.skip != 'true'
+        run: python -m src.utils.metrics_tracker
+
       - name: Generate release notes
         if: steps.cache-check.outputs.skip != 'true'
         run: python -m src.utils.release_notes
@@ -87,6 +91,14 @@ jobs:
         with:
           name: metrics-report
           path: metrics/
+
+      - name: Upload trend chart
+        if: steps.cache-check.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: performance-trend
+          path: metrics/trend.png
 
       - name: Create GitHub Release
         if: success() && steps.cache-check.outputs.skip != 'true'
