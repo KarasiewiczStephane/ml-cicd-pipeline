@@ -69,3 +69,95 @@ jobs:
       - name: Cleanup staging
         if: always()
         run: docker rm -f staging || true
+
+  production:
+    needs: staging
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag image as production
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+          docker tag ghcr.io/${{ github.repository }}:${{ github.sha }} ghcr.io/${{ github.repository }}:production
+          docker push ghcr.io/${{ github.repository }}:production
+
+      - name: Record deployment
+        run: |
+          pip install pyyaml
+          python -c "
+          from src.utils.deployment_tracker import DeploymentTracker
+          tracker = DeploymentTracker()
+          tracker.record_deployment('${{ github.sha }}')
+          "
+
+  rollback:
+    needs: production
+    runs-on: ubuntu-latest
+    if: failure()
+    permissions:
+      contents: write
+      issues: write
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Get previous production tag
+        id: previous
+        run: |
+          PREV_TAG=$(python -c "
+          from src.utils.deployment_tracker import DeploymentTracker
+          tracker = DeploymentTracker()
+          tag = tracker.get_previous_tag()
+          print(tag or '')
+          ")
+          echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+      - name: Rollback to previous version
+        if: steps.previous.outputs.tag != ''
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:${{ steps.previous.outputs.tag }}
+          docker tag ghcr.io/${{ github.repository }}:${{ steps.previous.outputs.tag }} ghcr.io/${{ github.repository }}:production
+          docker push ghcr.io/${{ github.repository }}:production
+
+      - name: Record rollback
+        if: steps.previous.outputs.tag != ''
+        run: |
+          python -c "
+          from src.utils.deployment_tracker import DeploymentTracker
+          tracker = DeploymentTracker()
+          tracker.mark_rollback('${{ steps.previous.outputs.tag }}')
+          "
+
+      - name: Create rollback issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Deployment Rollback Triggered',
+              body: `Deployment of commit \`${{ github.sha }}\` failed.\n\nRolled back to: \`${{ steps.previous.outputs.tag }}\`\n\nPlease investigate the integration test failures.`,
+              labels: ['deployment', 'rollback']
+            })
