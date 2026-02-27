@@ -12,6 +12,17 @@ model:
   random_state: 42
   path: models/model.joblib
 
+data_validation:
+  expected_columns:
+    - sepal length (cm)
+    - sepal width (cm)
+    - petal length (cm)
+    - petal width (cm)
+    - target
+  missing_threshold: 0.1
+  min_rows: 100
+  max_rows: 10000
+
 performance:
   accuracy_threshold: 0.85
 

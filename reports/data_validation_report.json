@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-02-27T16:25:43.297549+00:00",
+  "results": [
+    {
+      "check": "schema_validation",
+      "passed": true,
+      "details": {
+        "missing_columns": []
+      }
+    },
+    {
+      "check": "missing_values",
+      "passed": true,
+      "details": {
+        "max_missing_ratio": 0.0
+      }
+    },
+    {
+      "check": "row_count",
+      "passed": true,
+      "details": {
+        "row_count": 150,
+        "min": 100,
+        "max": 10000
+      }
+    }
+  ],
+  "passed": true
+}
