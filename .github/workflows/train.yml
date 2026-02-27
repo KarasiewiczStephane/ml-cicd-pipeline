@@ -33,35 +33,63 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Cache training artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            models/
+            .training_cache.json
+          key: training-${{ hashFiles('src/models/**', 'src/data/**', 'data/**') }}
+
+      - name: Check if training needed
+        id: cache-check
+        run: |
+          if [ "${{ inputs.force_retrain }}" = "true" ]; then
+            echo "skip=false" >> $GITHUB_OUTPUT
+          else
+            python -m src.utils.cache >> $GITHUB_OUTPUT
+          fi
+
       - name: Validate data
+        if: steps.cache-check.outputs.skip != 'true'
         run: python -m src.data.validator
 
       - name: Train model
+        if: steps.cache-check.outputs.skip != 'true'
         run: python -m src.models.train
 
+      - name: Update training cache
+        if: steps.cache-check.outputs.skip != 'true'
+        run: python -c "from src.utils.cache import update_cache; update_cache()"
+
       - name: Evaluate model
+        if: steps.cache-check.outputs.skip != 'true'
         run: python -m src.models.evaluate
 
       - name: Performance gate
+        if: steps.cache-check.outputs.skip != 'true'
         run: python -m src.models.registry
 
       - name: Generate release notes
+        if: steps.cache-check.outputs.skip != 'true'
         run: python -m src.utils.release_notes
 
       - name: Upload model artifact
+        if: steps.cache-check.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: trained-model
           path: models/model.joblib
 
       - name: Upload metrics report
+        if: steps.cache-check.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: metrics-report
           path: metrics/
 
       - name: Create GitHub Release
-        if: success()
+        if: success() && steps.cache-check.outputs.skip != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: model-v${{ github.run_number }}

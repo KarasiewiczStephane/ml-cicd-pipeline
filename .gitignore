@@ -44,6 +44,7 @@ coverage.xml
 metrics/
 reports/
 models/
+.training_cache.json
 
 # Task Master (keep local)
 .taskmaster/
