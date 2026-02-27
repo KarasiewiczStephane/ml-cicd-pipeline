@@ -1,0 +1,42 @@
+# Production environment configuration
+environment: prod
+
+data:
+  dataset: iris
+  test_size: 0.2
+  random_state: 42
+
+data_validation:
+  expected_columns:
+    - sepal length (cm)
+    - sepal width (cm)
+    - petal length (cm)
+    - petal width (cm)
+    - target
+  missing_threshold: 0.01
+  min_rows: 100
+  max_rows: 10000
+
+model:
+  algorithm: random_forest
+  n_estimators: 100
+  random_state: 42
+  path: models/model.joblib
+
+performance:
+  accuracy_threshold: 0.90
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+
+logging:
+  level: WARNING
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+paths:
+  models_dir: models
+  metrics_dir: metrics
+  data_dir: data/sample
+  reports_dir: reports
