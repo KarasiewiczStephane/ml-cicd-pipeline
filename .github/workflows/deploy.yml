@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Download model artifact
         uses: dawidd6/action-download-artifact@v6
         with:
@@ -37,8 +40,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
-            ghcr.io/${{ github.repository }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:latest
 
   staging:
     needs: build-and-push
@@ -57,10 +60,13 @@ jobs:
       - name: Install test dependencies
         run: pip install pytest requests
 
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Deploy to staging (simulated)
         run: |
-          docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
-          docker run -d --name staging -p 8000:8000 ghcr.io/${{ github.repository }}:${{ github.sha }}
+          docker pull ${{ env.IMAGE }}:${{ github.sha }}
+          docker run -d --name staging -p 8000:8000 ${{ env.IMAGE }}:${{ github.sha }}
           sleep 10
 
       - name: Run integration tests
@@ -88,11 +94,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Tag image as production
         run: |
-          docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
-          docker tag ghcr.io/${{ github.repository }}:${{ github.sha }} ghcr.io/${{ github.repository }}:production
-          docker push ghcr.io/${{ github.repository }}:production
+          docker pull ${{ env.IMAGE }}:${{ github.sha }}
+          docker tag ${{ env.IMAGE }}:${{ github.sha }} ${{ env.IMAGE }}:production
+          docker push ${{ env.IMAGE }}:production
 
       - name: Record deployment
         run: |
@@ -134,12 +143,15 @@ jobs:
           ")
           echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
 
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Rollback to previous version
         if: steps.previous.outputs.tag != ''
         run: |
-          docker pull ghcr.io/${{ github.repository }}:${{ steps.previous.outputs.tag }}
-          docker tag ghcr.io/${{ github.repository }}:${{ steps.previous.outputs.tag }} ghcr.io/${{ github.repository }}:production
-          docker push ghcr.io/${{ github.repository }}:production
+          docker pull ${{ env.IMAGE }}:${{ steps.previous.outputs.tag }}
+          docker tag ${{ env.IMAGE }}:${{ steps.previous.outputs.tag }} ${{ env.IMAGE }}:production
+          docker push ${{ env.IMAGE }}:production
 
       - name: Record rollback
         if: steps.previous.outputs.tag != ''
