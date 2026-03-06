@@ -123,6 +123,9 @@ def _accuracy_color(accuracy_pct: float) -> str:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    print("Accuracy:", generate_accuracy_badge())
+    try:
+        print("Accuracy:", generate_accuracy_badge())
+    except FileNotFoundError:
+        logger.warning("Metrics file not found, skipping accuracy badge")
     print("Coverage:", generate_coverage_badge(85.0))
     print("Trained:", generate_trained_badge())
