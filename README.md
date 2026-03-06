@@ -40,24 +40,43 @@ graph LR
 ## Quick Start
 
 ```bash
-# Clone
+# Clone and install
 git clone git@github.com:KarasiewiczStephane/ml-cicd-pipeline.git
 cd ml-cicd-pipeline
+make install
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the full ML pipeline
+# Run the full ML pipeline (loads Iris data, trains, evaluates, exports sample CSV)
 make run
 
-# Run tests
-make test
+# Launch the Streamlit dashboard (model registry, accuracy trends, pipeline timeline)
+make dashboard
+```
 
-# Lint and format
-make lint
+The pipeline loads the Iris dataset via scikit-learn at runtime, trains a RandomForest classifier, evaluates metrics, and exports a sample CSV to `data/sample/iris.csv`. No manual data preparation is needed.
 
-# Run with coverage
-make coverage
+### Other Commands
+
+```bash
+make test       # Run pytest with coverage
+make lint       # Lint and format with ruff
+make coverage   # Enforce 80% coverage gate
+make docker     # Build and run the production container on port 8000
+```
+
+## Dashboard
+
+The Streamlit dashboard (`src/dashboard/app.py`) visualizes the CI/CD pipeline status:
+
+- **Summary metrics** — current model version, accuracy, total versions, best accuracy
+- **Performance trend** — accuracy and F1-score over time
+- **Model registry history** — versioned model table with status (production/archived)
+- **Pipeline run timeline** — Gantt-style view of pipeline stages
+- **Performance gate results** — pass/fail indicators per run
+
+The dashboard ships with built-in demo data and can optionally display real data from the model registry and metrics tracker (toggle in the sidebar).
+
+```bash
+make dashboard   # Opens at http://localhost:8501
 ```
 
 ## Workflows
@@ -81,6 +100,8 @@ ml-cicd-pipeline/
 │   ├── deploy.yml           # Docker build, staging, production
 │   └── badge-update.yml     # Dynamic badge updates
 ├── src/
+│   ├── dashboard/
+│   │   └── app.py           # Streamlit dashboard (registry, trends, gates)
 │   ├── data/
 │   │   ├── loader.py        # Iris dataset loading and splitting
 │   │   └── validator.py     # Schema, distribution, quality validation
@@ -107,7 +128,7 @@ ml-cicd-pipeline/
 │   ├── staging.yaml         # Staging (threshold: 0.85)
 │   └── prod.yaml            # Production (threshold: 0.90)
 ├── Dockerfile               # Production container with HEALTHCHECK
-├── Makefile                 # Common development commands
+├── Makefile                 # Dev commands (install, test, lint, run, dashboard, docker)
 ├── pyproject.toml           # Ruff + pytest config
 ├── requirements.txt         # Python dependencies
 └── .pre-commit-config.yaml  # Pre-commit hooks (ruff, whitespace)
@@ -155,8 +176,7 @@ pre-commit run --all-files
 
 **Need to retrain the model?**
 ```bash
-python -m src.models.train
-python -m src.models.evaluate
+make run   # Runs the full pipeline: load data, train, evaluate, export sample
 ```
 
 ## License
