@@ -1,5 +1,7 @@
 # ML CI/CD Pipeline
 
+> Production ML CI/CD with GitHub Actions — automated testing, data validation, model training, evaluation gates, deployment, and rollback.
+
 ![Build Status](https://github.com/KarasiewiczStephane/ml-cicd-pipeline/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-84%25-brightgreen)
 ![Model Accuracy](https://img.shields.io/badge/accuracy-96.7%25-brightgreen)
@@ -178,6 +180,11 @@ pre-commit run --all-files
 ```bash
 make run   # Runs the full pipeline: load data, train, evaluate, export sample
 ```
+
+
+## Author
+
+**Stéphane Karasiewicz** — [skarazdata.com](https://skarazdata.com) | [LinkedIn](https://www.linkedin.com/in/stephane-karasiewicz/)
 
 ## License
 
